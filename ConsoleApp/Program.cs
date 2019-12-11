@@ -8,7 +8,9 @@ namespace ODataExample
 {
     class Program
     {
-		const string innovatorUrl = "http://localhost/InnovatorServer"; // base Innovator url
+        private static HttpClient client = new HttpClient();
+
+        const string innovatorUrl = "http://localhost/InnovatorServer"; // base Innovator url
 		const string innovatorUsername = "admin"; // Innovator user name
 		const string innovatorPassword = "607920B64FE136F9AB2389E371852AF2"; // MD5 hash of Innovator user password (mush be SHA hash in case of FIPS)
         const string innovatorDatabase = "InnovatorSolutions"; // database name, could be obtained from innovatorServerUrl+"dblist.aspx"
@@ -73,36 +75,31 @@ namespace ODataExample
 		
 		static dynamic GetJson( string url, string accessToken = null, HttpContent body = null )
         {
-            using (HttpClient client = new HttpClient())
+            client.DefaultRequestHeaders.Accept.Add( new MediaTypeWithQualityHeaderValue("application/json") );
+
+            if(accessToken != null)
             {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
 
-                client.DefaultRequestHeaders.Accept.Add( new MediaTypeWithQualityHeaderValue("application/json") );
+            HttpResponseMessage response;
+            if (body == null)
+            {
+                response = client.GetAsync(url).Result;
+            }
+            else
+            {
+                response = client.PostAsync(url, body).Result;
+            }
 
-                if(accessToken != null)
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                }
-
-                HttpResponseMessage response;
-                if (body == null)
-                {
-                    response = client.GetAsync(url).Result;
-                }
-                else
-                {
-                    response = client.PostAsync(url, body).Result;
-                }
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return response.Content.ReadAsAsync<dynamic>().Result;
-                }
-                else
-                {
-                    Console.WriteLine("{0}: {1} ({2})", url, (int)response.StatusCode, response.ReasonPhrase);
-                    return null;
-                }
-
+            if (response.IsSuccessStatusCode)
+            {
+                return response.Content.ReadAsAsync<dynamic>().Result;
+            }
+            else
+            {
+                Console.WriteLine("{0}: {1} ({2})", url, (int)response.StatusCode, response.ReasonPhrase);
+                return null;
             }
         }
 
